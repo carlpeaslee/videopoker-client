@@ -12,15 +12,41 @@ export default class VideoPoker extends Component {
     super(props)
     this.io = SocketIO('http://localhost:5000')
     this.io.on('connected', console.log('connected'))
+
+    this.heart = '\u2665'
+    this.diamond = '\u2666'
+    this.spade = '\u2660'
+    this.club = '\u2663'
   }
 
   componentDidMount () {
     let width = this.canvas.parentElement.clientWidth
     let height = this.canvas.parentElement.clientHeight
+    let cardZoneWidth = width * .8
+    let cardZoneX = width * .1
+    let cardWidth = cardZoneWidth / 5.4
+    let cardHeight = cardWidth * 1.4
+    let cardXMargin = cardWidth * .1
+    let cardXArray = []
+    for (let i = 0; i < 5; i++) {
+      cardXArray.push(cardZoneX + ((cardWidth + cardXMargin) * i))
+    }
+    let betOneButton = [cardZoneX, (height - (cardHeight + 20)), cardWidth, (cardHeight / 3)]
+    let betMaxButton = [(cardZoneX + cardWidth + cardXMargin), (height - (cardHeight + 20)), cardWidth, (cardHeight / 3)]
+    let dealDrawButton = [(width - (cardZoneX + cardWidth)), (height - (cardHeight + 20)), cardWidth, (cardHeight / 3)]
+
     this.setState( (prevState, props) => {
       return {
         width,
-        height
+        height,
+        cardZoneX,
+        cardWidth,
+        cardHeight,
+        cardXMargin,
+        cardXArray,
+        betOneButton,
+        betMaxButton,
+        dealDrawButton
       }
     })
   }
@@ -30,19 +56,25 @@ export default class VideoPoker extends Component {
   }
 
   draw = () => {
-    let {width} = this.state
+    let {cardXArray, cardWidth, cardHeight, betOneButton, betMaxButton, dealDrawButton} = this.state
     let c = this.canvas.getContext('2d')
-    c.fillStyle = 'green'
-    let cardWidth = width / 8
-    let cardHeight = cardWidth * 1.4
-    let cardX = []
-    for (let i = 0; i < 5; i++) {
-      cardX.push( (((2*i) + 1)/12) * width)
+    for (let i = 0; i < cardXArray.length; i++) {
+      c.strokeStyle = 'black'
+      c.strokeRect(cardXArray[i],10,cardWidth,cardHeight)
+      c.textAlign = 'left'
+      c.fillStyle = 'black'
+      c.font = '30px sans-serif'
+      c.fillText(`${i}`, (cardXArray[i] + 5), 40)
+      c.fillStyle = 'red'
+      c.textAlign = 'right'
+      c.fillText(this.diamond, (cardXArray[i] + cardWidth), 85)
     }
-    for (let i = 0; i < cardX.length; i++) {
-      c.fillRect(cardX[i],10,cardWidth,cardHeight)
 
-    }
+    c.fillStyle = 'lightgreen'
+    c.fillRect(...betOneButton)
+    c.fillRect(...betMaxButton)
+    c.fillRect(...dealDrawButton)
+
   }
 
   newGame = () => {
