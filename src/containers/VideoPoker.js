@@ -1,100 +1,107 @@
 import React, {Component} from 'react'
+import {Table, BettingKey, CardZone, Card, Controls, Button, Bet} from '../styled'
 import SocketIO from 'socket.io-client'
 
+//'http://dev-casino.gamesmart.com'
 export default class VideoPoker extends Component {
 
   state = {
-    width: 0,
-    height: 0
+    cards: [],
+    bet: 1,
+    discard: Array(5).fill(true)
   }
 
   constructor(props) {
     super(props)
-    this.io = SocketIO('http://localhost:5000')
+    this.io = SocketIO('http://localhost:3000')
     this.io.on('connected', console.log('connected'))
-
-    this.heart = '\u2665'
-    this.diamond = '\u2666'
-    this.spade = '\u2660'
-    this.club = '\u2663'
+    this.io.on('openingHand', openingHand => {
+      console.log('openingHand', openingHand)
+      this.setState({cards: openingHand})
+    })
+    this.io.on('newCards', newCards => {
+      console.log('newCards', newCards)
+      this.setState({cards: newCards})
+    })
   }
 
-  componentDidMount () {
-    let width = this.canvas.parentElement.clientWidth
-    let height = this.canvas.parentElement.clientHeight
-    let cardZoneWidth = width * .8
-    let cardZoneX = width * .1
-    let cardWidth = cardZoneWidth / 5.4
-    let cardHeight = cardWidth * 1.4
-    let cardXMargin = cardWidth * .1
-    let cardXArray = []
-    for (let i = 0; i < 5; i++) {
-      cardXArray.push(cardZoneX + ((cardWidth + cardXMargin) * i))
-    }
-    let betOneButton = [cardZoneX, (height - (cardHeight + 20)), cardWidth, (cardHeight / 3)]
-    let betMaxButton = [(cardZoneX + cardWidth + cardXMargin), (height - (cardHeight + 20)), cardWidth, (cardHeight / 3)]
-    let dealDrawButton = [(width - (cardZoneX + cardWidth)), (height - (cardHeight + 20)), cardWidth, (cardHeight / 3)]
-
-    this.setState( (prevState, props) => {
+  betOne = () => {
+    console.log('hello')
+    this.setState( (prevState, props)=> {
+      let bet = prevState.bet + 1
+      if (bet > 5) {
+        bet = 1
+      }
       return {
-        width,
-        height,
-        cardZoneX,
-        cardWidth,
-        cardHeight,
-        cardXMargin,
-        cardXArray,
-        betOneButton,
-        betMaxButton,
-        dealDrawButton
+        bet
       }
     })
   }
 
-  componentDidUpdate(prevProps, prevState) {
-    this.draw()
+  play = () => {
+    let {bet} = this.state
+    this.io.emit('newGame', {bet})
   }
 
-  draw = () => {
-    let {cardXArray, cardWidth, cardHeight, betOneButton, betMaxButton, dealDrawButton} = this.state
-    let c = this.canvas.getContext('2d')
-    for (let i = 0; i < cardXArray.length; i++) {
-      c.strokeStyle = 'black'
-      c.strokeRect(cardXArray[i],10,cardWidth,cardHeight)
-      c.textAlign = 'left'
-      c.fillStyle = 'black'
-      c.font = '30px sans-serif'
-      c.fillText(`${i}`, (cardXArray[i] + 5), 40)
-      c.fillStyle = 'red'
-      c.textAlign = 'right'
-      c.fillText(this.diamond, (cardXArray[i] + cardWidth), 85)
-    }
-
-    c.fillStyle = 'lightgreen'
-    c.fillRect(...betOneButton)
-    c.fillRect(...betMaxButton)
-    c.fillRect(...dealDrawButton)
-
+  hold = (index) => {
+    this.setState( (prevState, props)=> {
+      let discard = prevState.discard
+      discard[index] = !discard[index]
+      return {
+        discard
+      }
+    })
   }
 
-  newGame = () => {
-    this.io.emit('newGame', {bet: 5000})
+  swap = () => {
+    let {discard} = this.state
+    this.io.emit('swap', discard)
   }
+
+  get cardList () {
+    let {cards, discard} = this.state
+    return cards.map((card, index)=>(
+      <Card
+        key={card.cid}
+        index={index}
+        onClick={()=>this.hold(index)}
+      >
+        <span>{card.rank}</span>
+        <span>{card.suit}</span>
+        <h2>{(discard[index]) ? "DISCARD" : "HOLD"}</h2>
+      </Card>
+    ))
+  }
+
   render() {
-    let {height, width} = this.state
+    let {bet, cards} = this.state
+    let {betOne, play, cardList, swap} = this
     return (
-      <canvas
-        ref={(canvas)=>{
-          this.canvas = canvas
-        }}
-        width={width}
-        height={height}
-        onClick={(e)=>{
-          console.log('clicked')
-          console.log(e.target.clientWidth)
-          console.log(e.nativeEvent.offsetX)
-        }}
-      />
+      <Table>
+        <BettingKey>
+        </BettingKey>
+        <CardZone>
+          {cardList}
+        </CardZone>
+        <Controls>
+          <Button
+            onClick={betOne}
+          >
+            Bet 1
+          </Button>
+          <Button>
+            Bet Max
+          </Button>
+          <Bet>
+            {bet}
+          </Bet>
+          <Button
+            onClick={(cards.length < 1) ? play : swap}
+          >
+            {(cards.length < 1) ? "Deal" : "Swap"}
+          </Button>
+        </Controls>
+      </Table>
     )
   }
 }
