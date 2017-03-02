@@ -1,5 +1,5 @@
 import React, {Component} from 'react'
-import {Table, BettingKey, CardZone, Card, Controls, Button, Bet} from '../styled'
+import {Table, BettingKey, CardZone, Card, Controls, Button, Bet, PayTable, KeyValue, PayRow} from '../styled'
 import SocketIO from 'socket.io-client'
 
 //'http://dev-casino.gamesmart.com'
@@ -8,13 +8,24 @@ export default class VideoPoker extends Component {
   state = {
     cards: [],
     bet: 1,
-    discard: Array(5).fill(true)
+    discard: Array(5).fill(true),
+    payTable: [],
+    maxBet: 5
   }
 
   constructor(props) {
     super(props)
     this.io = SocketIO('http://localhost:3000')
     this.io.on('connected', console.log('connected'))
+    this.io.on('payTable', payTableObject => {
+      let payTable = []
+      // eslint-disable-next-line
+      for (let hand in payTableObject) {
+        payTable.push({[hand.replace(/_/g, " ")]: payTableObject[hand]})
+      }
+      console.log('payTable', payTable)
+      this.setState({payTable})
+    })
     this.io.on('openingHand', openingHand => {
       console.log('openingHand', openingHand)
       this.setState({cards: openingHand})
@@ -26,16 +37,21 @@ export default class VideoPoker extends Component {
   }
 
   betOne = () => {
-    console.log('hello')
+    let {maxBet} = this.state
     this.setState( (prevState, props)=> {
       let bet = prevState.bet + 1
-      if (bet > 5) {
+      if (bet > maxBet) {
         bet = 1
       }
       return {
         bet
       }
     })
+  }
+
+  betMax = () => {
+    let {maxBet} = this.state
+    this.setState({bet: maxBet})
   }
 
   play = () => {
@@ -73,12 +89,45 @@ export default class VideoPoker extends Component {
     ))
   }
 
+  get payTables () {
+    let {payTable, maxBet, bet} = this.state
+    let payTables = []
+    for (let multiplier = 1; multiplier <= maxBet; multiplier++) {
+      payTables.push(
+        <PayTable
+          key={multiplier}
+          multiplier={multiplier}
+
+          bet={bet}
+        >
+          {payTable.map(payout => {
+            let key = Object.keys(payout).toString()
+            return (
+              <PayRow
+                key={key}
+              >
+                <KeyValue>
+                  {key}
+                </KeyValue>
+                <KeyValue>
+                  {payout[key] * multiplier}
+                </KeyValue>
+              </PayRow>
+            )
+          })}
+        </PayTable>
+      )
+    }
+    return payTables
+  }
+
   render() {
     let {bet, cards} = this.state
-    let {betOne, play, cardList, swap} = this
+    let {betOne, play, cardList, swap, payTables, betMax} = this
     return (
       <Table>
         <BettingKey>
+            {payTables}
         </BettingKey>
         <CardZone>
           {cardList}
@@ -89,7 +138,9 @@ export default class VideoPoker extends Component {
           >
             Bet 1
           </Button>
-          <Button>
+          <Button
+            onClick={betMax}
+          >
             Bet Max
           </Button>
           <Bet>

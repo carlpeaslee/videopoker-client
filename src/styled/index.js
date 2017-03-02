@@ -4,7 +4,6 @@ import media from './media'
 export const Main = styled.div`
   height: 100%;
   width: 100%;
-  margin: 100px auto;
 `
 
 export const Column = styled.div`
@@ -29,6 +28,22 @@ export const BettingKey = styled(Row)`
   background-color: yellow;
   width: 80%;
   min-height: 200px;
+  justify-content: space-around;
+`
+
+export const PayTable = styled(Column)`
+  background-color: white;
+  flex-wrap: wrap;
+  margin: 20px;
+  border: ${({multiplier,bet}) => (multiplier === bet) ? '3px solid pink': 'none'};
+`
+
+export const PayRow = styled(Row)`
+  justify-content: space-between;
+`
+
+export const KeyValue = styled.span`
+  display: flex;
 `
 
 export const CardZone = styled(Row)`
