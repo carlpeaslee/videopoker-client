@@ -1,10 +1,12 @@
 import styled from 'styled-components'
 import media from './media'
 
-export const Main = styled.div`
-  height: 100%;
-  width: 100%;
-`
+const cardWidths = {
+  xs: 40,
+  s: 80,
+  m: 150,
+  l: 200
+}
 
 export const Column = styled.div`
   display: flex;
@@ -20,14 +22,12 @@ export const Table = styled(Column)`
   background-color: lightgreen;
   align-items: center;
   justify-content: space-around;
-  height: 100%;
+  min-height: 100%;
   width: 100%;
 `
 
 export const BettingKey = styled(Row)`
-  background-color: yellow;
   width: 80%;
-  min-height: 200px;
   justify-content: space-around;
 `
 
@@ -35,7 +35,10 @@ export const PayTable = styled(Column)`
   background-color: white;
   flex-wrap: wrap;
   margin: 20px;
-  border: ${({multiplier,bet}) => (multiplier === bet) ? '3px solid pink': 'none'};
+  outline: ${({multiplier,bet}) => (multiplier === bet) ? '3px solid pink': 'none'};
+  width: 25%;
+  padding: 20px;
+  box-sizing: border-box;
 `
 
 export const PayRow = styled(Row)`
@@ -44,52 +47,112 @@ export const PayRow = styled(Row)`
 
 export const KeyValue = styled.span`
   display: flex;
+  font-size: 2em;
 `
 
 export const CardZone = styled(Row)`
-  background-color: blue;
   width: 80%;
-  min-height: 200px;
   justify-content: space-around;
   align-items: center;
+  padding: 10px;
+  height: ${cardWidths.l * 1.4}px;
+  ${media.xs`
+    height: ${cardWidths.xs * 1.4}px;
+  `}
+  ${media.s`
+    height: ${cardWidths.s * 1.4}px;
+  `}
+  ${media.m`
+    height: ${cardWidths.m * 1.4}px;
+  `}
+  ${media.l`
+    height: ${cardWidths.l * 1.4}px;
+  `}
 `
 
 export const Card = styled(Column)`
   background-color: white;
-  width: 150px;
-  height: 210px;
-  margin: 10px;
+  width: ${cardWidths.l}px;
+  height: ${cardWidths.l * 1.4}px;
+  margin: 0 10px;
+  box-shadow: ${({discard}) => (discard) ? "none" : "0 0 20px blue"};
+  opacity: ${({discard}) => (discard) ? .8 : 1 };
+  &:before {
+    position: absolute;
+    margin-top: -50px;
+    align-self: center;
+    font-size: 2em;
+    content: "${({discard}) => (discard) ? "swap" : "hold"}";
+    color: black;
+  }
   ${media.xs`
-    width: 40px;
-    height: 56px;
+    width: ${cardWidths.xs}px;
+    height: ${cardWidths.xs * 1.4}px;
+    border-radius: ${cardWidths.xs / 20}px;
+    padding:${cardWidths.xs / 20}px;
   `}
   ${media.s`
-    width: 80px;
-    height: 112px;
+    width: ${cardWidths.s}px;
+    height: ${cardWidths.s * 1.4}px;
+    border-radius: ${cardWidths.s / 20}px;
+    padding:${cardWidths.s / 20}px;
   `}
   ${media.m`
-    width: 150px;
-    height: 210px;
+    width: ${cardWidths.m}px;
+    height: ${cardWidths.m * 1.4}px;
+    border-radius: ${cardWidths.m / 20}px;
+    padding:${cardWidths.m / 20}px;
   `}
   ${media.l`
-    width: 200px;
-    height: 280px;
+    width: ${cardWidths.l}px;
+    height: ${cardWidths.l * 1.4}px;
+    border-radius: ${cardWidths.l / 20}px;
+    padding:${cardWidths.l / 20}px;
   `}
 `
+
+export const Text = styled.span`
+  font-size: 4em;
+`
+
+export const Suit = styled.span`
+  font-size: 7em;
+  margin: auto 0;
+  align-self: center;
+  color: ${({suit}) => (suit === 'DIAMONDS' || suit === 'HEARTS') ? 'red' : 'black'};
+`
+
 export const Controls = styled(Row)`
   width: 80%;
-  justify-content: center;
-  background-color: salmon;
-  min-height: 150px;
+  justify-content: space-around;
 `
 
 export const Button = styled.button`
-  min-height: 150px;
   width: 20%;
+  font-size: 4em;
+  background-color: white;
+  border-color: lightblue;
+  ${media.xs`
+    height: ${cardWidths.xs}px;
+    border-radius: ${cardWidths.xs / 10}px;
+  `}
+  ${media.s`
+    height: ${cardWidths.s}px;
+    border-radius: ${cardWidths.s / 10}px;
+  `}
+  ${media.m`
+    height: ${cardWidths.m}px;
+    border-radius: ${cardWidths.m / 10}px;
+  `}
+  ${media.l`
+    height: ${cardWidths.l}px;
+    border-radius: ${cardWidths.l / 10}px;
+  `}
 `
 
 export const Bet = styled(Column)`
   align-items: center;
   justify-content: center;
   width: 20%;
+  font-size: 7em;
 `

@@ -1,5 +1,5 @@
 import React, {Component} from 'react'
-import {Table, BettingKey, CardZone, Card, Controls, Button, Bet, PayTable, KeyValue, PayRow} from '../styled'
+import {Table, BettingKey, CardZone, Card, Controls, Button, Bet, PayTable, KeyValue, PayRow, Text, Suit} from '../styled'
 import SocketIO from 'socket.io-client'
 
 //'http://dev-casino.gamesmart.com'
@@ -10,7 +10,8 @@ export default class VideoPoker extends Component {
     bet: 1,
     discard: Array(5).fill(true),
     payTable: [],
-    maxBet: 5
+    maxBet: 3,
+    gameOver: false
   }
 
   constructor(props) {
@@ -21,18 +22,23 @@ export default class VideoPoker extends Component {
       let payTable = []
       // eslint-disable-next-line
       for (let hand in payTableObject) {
-        payTable.push({[hand.replace(/_/g, " ")]: payTableObject[hand]})
+        payTable.push({[hand]: payTableObject[hand]})
       }
-      console.log('payTable', payTable)
       this.setState({payTable})
     })
     this.io.on('openingHand', openingHand => {
-      console.log('openingHand', openingHand)
-      this.setState({cards: openingHand})
+      this.setState({
+        cards: openingHand,
+        gameOver: false
+      })
     })
-    this.io.on('newCards', newCards => {
-      console.log('newCards', newCards)
-      this.setState({cards: newCards})
+    this.io.on('result', object => {
+      console.log('win?', object.result.winningVideoPokerHand)
+      this.setState({
+        cards: object.playerHand,
+        winningHand: object.result.winningVideoPokerHand,
+        gameOver: true
+      })
     })
   }
 
@@ -74,6 +80,7 @@ export default class VideoPoker extends Component {
     this.io.emit('swap', discard)
   }
 
+
   get cardList () {
     let {cards, discard} = this.state
     return cards.map((card, index)=>(
@@ -81,10 +88,14 @@ export default class VideoPoker extends Component {
         key={card.cid}
         index={index}
         onClick={()=>this.hold(index)}
+        discard={(discard[index])}
       >
-        <span>{card.rank}</span>
-        <span>{card.suit}</span>
-        <h2>{(discard[index]) ? "DISCARD" : "HOLD"}</h2>
+        <Text>{card.text}</Text>
+        <Suit
+          suit={card.suit}
+        >
+          {card.unicode}
+        </Suit>
       </Card>
     ))
   }
@@ -122,7 +133,7 @@ export default class VideoPoker extends Component {
   }
 
   render() {
-    let {bet, cards} = this.state
+    let {bet, cards, gameOver} = this.state
     let {betOne, play, cardList, swap, payTables, betMax} = this
     return (
       <Table>
@@ -147,9 +158,9 @@ export default class VideoPoker extends Component {
             {bet}
           </Bet>
           <Button
-            onClick={(cards.length < 1) ? play : swap}
+            onClick={(cards.length < 1 || gameOver) ? play : swap}
           >
-            {(cards.length < 1) ? "Deal" : "Swap"}
+            {(cards.length < 1 || gameOver) ? "Deal" : "Swap"}
           </Button>
         </Controls>
       </Table>
