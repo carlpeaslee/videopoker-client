@@ -1,8 +1,9 @@
 import React, {Component} from 'react'
-import {Table, BettingKey, CardZone, Card, Controls, Button, Bet, PayTable, KeyValue, PayRow, Text, Suit} from '../styled'
+import {Table, BettingKey, CardZone, Card, Controls, Button, Bet, PayTable, PayRow, Text, Suit, KeyRow, Result, KeyTable} from '../styled'
 import SocketIO from 'socket.io-client'
 
 //'http://dev-casino.gamesmart.com'
+//'http://localhost:3000'
 export default class VideoPoker extends Component {
 
   state = {
@@ -11,14 +12,20 @@ export default class VideoPoker extends Component {
     discard: Array(5).fill(true),
     payTable: [],
     maxBet: 3,
-    gameOver: false
+    gameOver: true,
+    credits: 100
   }
 
   constructor(props) {
     super(props)
-    this.io = SocketIO('http://localhost:3000')
-    this.io.on('connected', console.log('connected'))
-    this.io.on('payTable', payTableObject => {
+    this.io = SocketIO('http://dev-casino.gamesmart.com')
+    this.io.on('styling', (config) => {
+      console.log(config)
+      if (config) {
+        this.setState({styling: config})
+      }
+    })
+    this.io.on('payTable', (payTableObject) => {
       let payTable = []
       // eslint-disable-next-line
       for (let hand in payTableObject) {
@@ -26,18 +33,23 @@ export default class VideoPoker extends Component {
       }
       this.setState({payTable})
     })
-    this.io.on('openingHand', openingHand => {
-      this.setState({
-        cards: openingHand,
-        gameOver: false
-      })
-    })
-    this.io.on('result', object => {
-      console.log('win?', object.result.winningVideoPokerHand)
+    this.io.on('openingHand', (object) => {
       this.setState({
         cards: object.playerHand,
-        winningHand: object.result.winningVideoPokerHand,
-        gameOver: true
+        currentValue: object.currentValue.winningVideoPokerHand,
+        gameOver: false,
+        discard: Array(5).fill(true),
+      })
+    })
+    this.io.on('result', (object) => {
+      this.setState((prevState) => {
+        let credits = prevState.credits + object.winnings
+        return {
+          cards: object.playerHand,
+          winningHand: object.result.winningVideoPokerHand,
+          gameOver: true,
+          credits
+        }
       })
     })
   }
@@ -50,18 +62,34 @@ export default class VideoPoker extends Component {
         bet = 1
       }
       return {
-        bet
+        bet,
+        currentValue: false,
+        winningHand: false,
+        cards: []
       }
     })
   }
 
   betMax = () => {
     let {maxBet} = this.state
-    this.setState({bet: maxBet})
+    this.setState({
+      bet: maxBet,
+      currentValue: false,
+      winningHand: false,
+      cards: []
+    })
   }
 
   play = () => {
     let {bet} = this.state
+    this.setState( (prevState) => {
+      let credits = prevState.credits - prevState.bet
+      return {
+        credits,
+        currentValue: false,
+        winningHand: false,
+      }
+    })
     this.io.emit('newGame', {bet})
   }
 
@@ -77,38 +105,74 @@ export default class VideoPoker extends Component {
 
   swap = () => {
     let {discard} = this.state
+    this.setState({
+      discard: Array(5).fill(true),
+      currentValue: false
+    })
     this.io.emit('swap', discard)
   }
 
 
   get cardList () {
-    let {cards, discard} = this.state
-    return cards.map((card, index)=>(
-      <Card
-        key={card.cid}
-        index={index}
-        onClick={()=>this.hold(index)}
-        discard={(discard[index])}
-      >
-        <Text>{card.text}</Text>
-        <Suit
-          suit={card.suit}
+    let {cards, discard, gameOver, styling} = this.state
+    if (!styling) {
+      return cards.map((card, index)=>(
+        <Card
+          key={index}
+          onClick={()=>this.hold(index)}
+          discard={(discard[index])}
+          gameOver={gameOver}
         >
-          {card.unicode}
-        </Suit>
-      </Card>
-    ))
+          <Text>{card.text}</Text>
+          <Suit
+            suit={card.suit}
+          >
+            {card.unicode}
+          </Suit>
+        </Card>
+      ))
+    } else {
+      return cards.map((card, index)=>(
+        <Card
+          key={index}
+          onClick={()=>this.hold(index)}
+          discard={(discard[index])}
+          gameOver={gameOver}
+          cardUrl={styling.cardUrl}
+        />
+      ))
+    }
+
   }
 
   get payTables () {
-    let {payTable, maxBet, bet} = this.state
+    let {payTable, maxBet, bet, currentValue, winningHand} = this.state
+
     let payTables = []
+    payTables.push(
+      <KeyTable
+        key={0}
+        multiplier={false}
+        bet={bet}
+      >
+        {payTable.map(payout => {
+          let key = Object.keys(payout).toString()
+          return (
+            <KeyRow
+              key={key}
+              currentValue={(currentValue === key || winningHand === key)}
+            >
+                {key}
+            </KeyRow>
+          )
+        })}
+      </KeyTable>
+    )
     for (let multiplier = 1; multiplier <= maxBet; multiplier++) {
       payTables.push(
         <PayTable
           key={multiplier}
           multiplier={multiplier}
-
           bet={bet}
         >
           {payTable.map(payout => {
@@ -116,13 +180,9 @@ export default class VideoPoker extends Component {
             return (
               <PayRow
                 key={key}
+                currentValue={( (bet === multiplier) && (currentValue === key || winningHand === key))}
               >
-                <KeyValue>
-                  {key}
-                </KeyValue>
-                <KeyValue>
                   {payout[key] * multiplier}
-                </KeyValue>
               </PayRow>
             )
           })}
@@ -133,29 +193,37 @@ export default class VideoPoker extends Component {
   }
 
   render() {
-    let {bet, cards, gameOver} = this.state
+    let {bet, cards, gameOver, credits, winningHand} = this.state
     let {betOne, play, cardList, swap, payTables, betMax} = this
     return (
       <Table>
         <BettingKey>
             {payTables}
         </BettingKey>
+        <Result>
+          {(gameOver && winningHand) ? winningHand : ''}
+        </Result>
         <CardZone>
           {cardList}
         </CardZone>
         <Controls>
           <Button
             onClick={betOne}
+            disabled={!gameOver}
           >
-            Bet 1
+            +1
           </Button>
+          <Bet>
+            Bet {bet}
+          </Bet>
           <Button
             onClick={betMax}
+            disabled={!gameOver}
           >
             Bet Max
           </Button>
           <Bet>
-            {bet}
+          Credits {credits}
           </Bet>
           <Button
             onClick={(cards.length < 1 || gameOver) ? play : swap}
