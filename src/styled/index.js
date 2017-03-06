@@ -24,12 +24,14 @@ export const Table = styled(Column)`
   justify-content: space-around;
   min-height: 100%;
   width: 100%;
-  padding: 20px 0;
+  background-image: url("${({theme}) => (theme) ? theme : ''}");
+  background-size: cover;
 `
 
 export const BettingKey = styled(Row)`
   width: 80%;
   justify-content: space-around;
+  margin: 20px 0;
   ${media.xs`
     width: 100%;
   `}
@@ -42,10 +44,10 @@ export const BettingKey = styled(Row)`
 `
 
 export const KeyTable = styled(Column)`
-  width: 30%;
   background-color: white;
   padding: 20px;
   opacity: .9;
+  flex-grow: 3;
   ${media.xs`
     width: 60%;
     opacity: 1;
@@ -60,20 +62,8 @@ export const PayTable = styled(Column)`
   background-color: white;
   box-shadow: ${({multiplier,bet}) => (multiplier === bet) ? '0 0 20px blue': 'none'};
   opacity: ${({multiplier,bet}) => (multiplier === bet) ? 1: .9};
-  width: 25%;
+  flex-grow: 1;
   padding: 20px;
-  ${media.xs`
-    display: ${({multiplier,bet}) => (multiplier === bet) ? '': 'none'};
-    width: 40%;
-    opacity: 1;
-    box-shadow: none;
-  `}
-  ${media.s`
-    display: ${({multiplier,bet}) => (multiplier === bet) ? '': 'none'};
-    width: 40%;
-    opacity: 1;
-    box-shadow: none;
-  `}
 `
 
 export const KeyRow = styled(Row)`
@@ -106,7 +96,7 @@ export const CardZone = styled(Row)`
   align-items: center;
   padding: 10px;
   height: ${cardWidths.l * 1.4}px;
-  margin: auto;
+  margin: 50px 0;
   ${media.xs`
     height: ${cardWidths.xs * 1.4}px;
     width: 98%;
@@ -201,34 +191,40 @@ export const Suit = styled.span`
 export const Controls = styled(Row)`
   width: 80%;
   justify-content: space-around;
+  margin: 20px 0;
 `
 
 export const Button = styled.button`
-  width: 20%;
   font-size: 4em;
   background-color: white;
   border-color: lightblue;
   cursor: pointer;
+  background-image: url("${({theme}) => (theme) ? theme : ''}");
+  background-size: cover;
   &:disabled {
     cursor: not-allowed;
   }
   ${media.xs`
-    height: ${cardWidths.xs}px;
+    min-height: ${cardWidths.xs}px;
+    min-width: ${cardWidths.xs}px;
     border-radius: ${cardWidths.xs / 10}px;
     font-size: 1em;
   `}
   ${media.s`
-    height: ${cardWidths.s}px;
+    min-height: ${cardWidths.s}px;
+    min-width: ${cardWidths.s}px;
     border-radius: ${cardWidths.s / 10}px;
     font-size: 1.5em;
   `}
   ${media.m`
-    height: ${cardWidths.m}px;
+    min-height: ${cardWidths.m}px;
+    min-width: ${cardWidths.m}px;
     border-radius: ${cardWidths.m / 10}px;
     font-size: 2em;
   `}
   ${media.l`
-    height: ${cardWidths.l}px;
+    min-height: ${cardWidths.l}px;
+    min-width: ${cardWidths.l}px;
     border-radius: ${cardWidths.l / 10}px;
     font-size: 3em;
   `}
@@ -249,8 +245,9 @@ export const Bet = styled(Column)`
 
 export const Result = styled(Row)`
   display: flex;
-  font-size: 3em;
-  height: 3em;
+  font-size: 2em;
+  height: 2em;
+  width: 80%;
   ${media.xs`
     font-size: 2em;
   `}
